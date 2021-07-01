@@ -54,6 +54,7 @@ add_message_files(
   Rotation.msg
   Move.msg
   Acceleration.msg
+  TouchSensor.msg
 )
 
 ## Generate services in the 'srv' folder

@@ -17,6 +17,7 @@ from nxt_integration.msg import Move, Distance, Color, Rotation, Acceleration
 import nxt.locator
 from nxt.sensor import *
 from nxt.motor import *
+import sys
 # =============================================================================
 
 # Connection
@@ -41,45 +42,38 @@ gyro.calibrate()
 
 # Callback function for NXT move
 def movement(data):
-    # Go forward
-    if data.dir == 'w':
-        both.run(100)
+    if data.dir == 'FORWARD':
+        both.run(85)  # Power at 85%
 
-    # Turn left
-    elif data.dir == 'a':
-        leftboth.run()
+    elif data.dir == 'LEFT':
+        leftboth.turn(100, 35)  # 90 degrees
 
-    # Go back
-    elif data.dir == 's':
-        both.run(-100)
+    elif data.dir == 'BACK':
+        both.run(-85)  # Power at 85%
 
-    # Turn right
-    elif data.dir == 'd':
-        rightboth.run()
+    elif data.dir == 'RIGHT':
+        rightboth.turn(100, 35)
 
-    # Stop movement
     elif data.dir == 'STOP':
         rightboth.brake()
         leftboth.brake()
         both.brake()
 
-    # Incorrect key pressed
-    else:
-        rospy.loginfo('Key not allowed')
-        rightboth.brake()
-        leftboth.brake()
-        both.brake()
-
+def stop_nxt():
+    rightboth.brake()
+    leftboth.brake()
+    both.brake()
 
 # Publish the data read by the sensor on each topic
 def publishments():
     print 'Connected'
     pub_color = rospy.Publisher('color_topic', Color, queue_size=10)
+    # pub_touch = rospy.Publisher('touch_topic', TouchSensor, queue_size=10)
     pub_distance = rospy.Publisher('distance_topic', Distance, queue_size=10)
     pub_gyro = rospy.Publisher('gyro_topic', Rotation, queue_size=10)
     pub_acc = rospy.Publisher('acc_topic', Acceleration, queue_size=10)
 
-    rospy.init_node('communication', anonymous=True)
+    rospy.init_node('communication', anonymous=True, disable_signals=True)
     rate = rospy.Rate(10)  # 10hz
 
     # Loop until stop execution
@@ -88,16 +82,19 @@ def publishments():
         msg_color.header.stamp = rospy.Time.now()
         msg_color.header.frame_id = 'Color_Sensor'
         msg_color.color = color.get_color()
+        pub_color.publish(msg_color)
 
         msg_dist = Distance()
         msg_dist.header.stamp = rospy.Time.now()
         msg_dist.header.frame_id = 'Ultrasonic_Sensor'
         msg_dist.cms = u.get_distance()
+        pub_distance.publish(msg_dist)
 
         msg_gyro = Rotation()
         msg_gyro.header.stamp = rospy.Time.now()
         msg_gyro.header.frame_id = 'Gyro_Sensor'
         msg_gyro.degrees_sec = gyro.get_rotation_speed()
+        pub_gyro.publish(msg_gyro)
 
         msg_acc = Acceleration()
         acceleration = acc.get_acceleration()
@@ -106,11 +103,14 @@ def publishments():
         msg_acc.x = acceleration.x
         msg_acc.y = acceleration.y
         msg_acc.z = acceleration.z
-
-        pub_color.publish(msg_color)
-        pub_distance.publish(msg_dist)
-        pub_gyro.publish(msg_gyro)
         pub_acc.publish(msg_acc)
+
+        # msg_touch = TouchSensor()
+        # msg_touch.header.stamp = rospy.Time.now()
+        # msg_touch.header.frame_id = 'Touch_Sensor'
+        # msg_touch.left = str(touch_left.is_pressed())
+        # msg_touch.right = str(touch_right.is_pressed())
+        # pub_touch.publish(msg_touch)
 
         rate.sleep()
 
@@ -122,5 +122,8 @@ if __name__ == '__main__':
 
         # Call for publish in each topic
         publishments()
-    except rospy.ROSInterruptException:
-        pass
+    except KeyboardInterrupt:
+        rightboth.brake()
+        leftboth.brake()
+        both.brake()
+        sys.exit(0)

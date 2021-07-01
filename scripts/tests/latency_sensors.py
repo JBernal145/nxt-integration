@@ -1,5 +1,13 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
+# =============================================================================
+# Created By  : Javier Bernal
+# Created Date: 2021-04-15
+# =============================================================================
+"""This module check the communication latency between PC and NXT """
+# =============================================================================
+# Imports
+# =============================================================================
 import time
 import nxt.locator
 from nxt.sensor import *
